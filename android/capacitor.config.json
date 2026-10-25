@@ -4,6 +4,7 @@
   "webDir": "www",
   "server": { "androidScheme": "https" },
   "plugins": {
-    "CapacitorHttp": { "enabled": true }
+    "CapacitorHttp": { "enabled": true },
+    "SystemBars": { "insetsHandling": "css" }
   }
 }
