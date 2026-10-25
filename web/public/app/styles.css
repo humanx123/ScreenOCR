@@ -1,0 +1,301 @@
+:root {
+  --bg: #000000;
+  --panel: #070707;
+  --card: #0c0c0c;
+  --line: #1c1c1c;
+  --line-2: #2a2a2a;
+  --text: #e8e8e8;
+  --muted: #7a7a7a;
+  --accent: #ffffff;
+  --danger: #ff6b6b;
+  --side: min(86vw, 330px);
+}
+@media (prefers-color-scheme: light) {
+  /* La app es siempre oscura: se fuerza el fondo negro igualmente */
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+body { overflow: hidden; }
+.topbar { flex: 0 0 auto; }
+
+/* ---------- Barra superior ---------- */
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 12px;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  position: relative;
+  z-index: 3;
+}
+.brand { font-weight: 600; letter-spacing: 1.5px; font-size: 12px; white-space: nowrap; }
+.topbar { gap: 4px; padding: 0 8px; }
+.topbar button { padding: 8px 8px; font-size: 13px; }
+.topbar button.code { font-size: 10px; padding: 7px 6px; letter-spacing: .5px; }
+.spacer { flex: 1; }
+
+/* ---------- Botones ---------- */
+button {
+  background: var(--card);
+  border: 1px solid #262626;
+  border-radius: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+button:hover { background: #161616; border-color: #3a3a3a; }
+button:disabled { color: #4a4a4a; border-color: #1a1a1a; cursor: default; background: var(--card); }
+button.ghost { background: transparent; border-color: transparent; color: #bdbdbd; }
+button.ghost:hover { background: #151515; color: #fff; }
+button.icon { font-size: 18px; padding: 6px 10px; }
+button.primary { background: #fff; color: #000; border: none; font-weight: 600; }
+button.primary:hover { background: #d6d6d6; }
+button.primary:disabled { background: #2a2a2a; color: #666; }
+
+/* ---------- Layout ---------- */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+.layout {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+#sidebar {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: var(--side);
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  transition: transform .25s ease;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 0 12px;
+  overflow: hidden;
+}
+#sidebar.open { transform: translateX(0); }
+#scrim {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.6);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+  z-index: 3;
+}
+#scrim.show { opacity: 1; pointer-events: auto; }
+
+main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 0 4px;
+}
+.side-label { padding: 0 20px 10px; }
+
+/* ---------- Lista de trabajos ---------- */
+#jobList { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+#jobList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 10px;
+  padding: 10px 8px 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+#jobList li:hover { background: #111; }
+#jobList li.active { background: #1a1a1a; }
+#jobList .meta { flex: 1; min-width: 0; }
+#jobList .title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#jobList .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+#jobList .row-btn {
+  background: transparent; border-color: transparent;
+  color: var(--muted); padding: 6px 9px; font-size: 15px; border-radius: 8px;
+}
+#jobList .row-btn:hover { background: #1f1f1f; color: #fff; border-color: #2c2c2c; }
+#jobList .row-btn.danger:hover { color: var(--danger); }
+.empty { color: var(--muted); padding: 0 20px; font-size: 14px; }
+
+/* ---------- Vista de captura y texto ---------- */
+.preview-wrap {
+  flex: 0 0 auto;
+  min-height: 180px;
+  max-height: 46vh;
+  background: #050505;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#preview { max-width: 100%; max-height: 46vh; object-fit: contain; display: block; }
+.preview-empty { color: #4a4a4a; font-size: 14px; padding: 24px; text-align: center; }
+
+textarea#editor {
+  flex: 1;
+  min-height: 160px;
+  width: 100%;
+  resize: vertical;
+  background: #080808;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: Consolas, "Roboto Mono", monospace;
+  font-size: 15px;
+  line-height: 1.5;
+  outline: none;
+}
+textarea#editor:focus { border-color: #4a4a4a; }
+textarea#editor:read-only { opacity: .7; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.status { flex: 1; min-width: 120px; color: var(--muted); font-size: 13px; }
+
+.fab-group {
+  flex: 0 0 auto;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  position: relative;
+  z-index: 2;
+}
+.fab {
+  padding: 13px 22px;
+  border-radius: 999px;
+  min-width: 140px;
+}
+.fab.primary { background: #fff; color: #000; border-color: #fff; font-weight: 600; }
+/* Botones con texto estilo código, monocromáticos */
+button.code {
+  font-family: Consolas, "Roboto Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+
+/* ---------- Diálogos ---------- */
+dialog {
+  background: #0a0a0a;
+  color: var(--text);
+  border: 1px solid #262626;
+  border-radius: 16px;
+  padding: 20px;
+  width: min(92vw, 520px);
+  max-height: 90dvh;
+  box-shadow: 0 16px 48px rgba(0,0,0,.8);
+}
+dialog::backdrop { background: rgba(0,0,0,.7); }
+dialog h2 { margin: 0 0 10px; font-size: 18px; font-weight: 600; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 4px 0 12px; }
+.field { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 6px; }
+input[type="text"], input[type="password"], select, dialog input {
+  width: 100%;
+  background: #080808;
+  border: 1px solid #1f1f1f;
+  border-radius: 10px;
+  padding: 11px 12px;
+  outline: none;
+  margin-top: 6px;
+}
+input:focus, select:focus { border-color: #4a4a4a; }
+dialog .actions { margin-top: 16px; flex-wrap: nowrap; }
+dialog .actions button { flex: 1 1 0; min-width: 0; padding: 10px 8px; font-size: 15px; white-space: nowrap; }
+
+/* Recorte */
+.crop-stage {
+  max-height: 58dvh;
+  overflow: auto;
+  background: #050505;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+}
+#cropBox { position: relative; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cropImg { width: 100%; height: auto; display: block; pointer-events: none; }
+#cropSel {
+  position: absolute;
+  border: 2px solid #fff;
+  background: rgba(255,255,255,.12);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.55);
+  pointer-events: none;
+}
+
+/* Donar */
+.donate-item { margin: 14px 0; }
+.donate-name { color: var(--muted); font-size: 11px; letter-spacing: 2px; margin-bottom: 6px; }
+.donate-row { display: flex; gap: 8px; align-items: center; }
+.donate-row input { margin-top: 0; font-family: Consolas, monospace; font-size: 12px; }
+.donate-row button { white-space: nowrap; }
+
+/* Toast */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 20px);
+  background: #fff;
+  color: #000;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 10;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Escritorio / tablet: columna fija como en Windows ---------- */
+@media (min-width: 900px) {
+  #sidebar { position: static; transform: none; width: 330px; flex: 0 0 330px; }
+  #scrim { display: none; }
+  .fab-group { display: none; }
+  #menuBtn { display: none; }
+  main { padding: 24px 28px; gap: 14px; }
+  .preview-wrap { max-height: 50vh; }
+  #preview { max-height: 50vh; }
+}

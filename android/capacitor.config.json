@@ -1,0 +1,9 @@
+{
+  "appId": "com.osram90.screenocr",
+  "appName": "ScreenOCR",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}
