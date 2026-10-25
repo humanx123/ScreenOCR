@@ -184,7 +184,8 @@ textarea#editor:read-only { opacity: .7; }
   align-items: center;
   gap: 8px;
 }
-.status { flex: 1; min-width: 120px; color: var(--muted); font-size: 13px; }
+.status { flex: 1 0 100%; color: var(--muted); font-size: 13px; }
+.actions button { flex: 1 1 auto; text-align: center; }
 
 .fab-group {
   flex: 0 0 auto;
