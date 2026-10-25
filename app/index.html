@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>ScreenOCR en línea</title>
+  <link rel="icon" href="../icon-512.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="menuBtn" class="ghost code" aria-label="Trabajos">LISTA</button>
+    <span class="brand">SCREEN OCR</span>
+    <span class="spacer"></span>
+    <button id="donateBtn" class="ghost">Donar</button>
+    <button id="settingsBtn" class="ghost code" aria-label="Configuración">AJUSTES</button>
+  </header>
+
+  <div class="layout">
+    <aside id="sidebar">
+      <div class="label side-label">TRABAJOS</div>
+      <ul id="jobList"></ul>
+      <p id="emptyList" class="empty">Aún no hay capturas.</p>
+    </aside>
+    <div id="scrim"></div>
+
+    <main>
+      <div class="preview-wrap">
+        <img id="preview" alt="Captura seleccionada" hidden>
+        <div id="previewEmpty" class="preview-empty">Sin captura seleccionada</div>
+      </div>
+      <div class="label">TEXTO RECONOCIDO</div>
+      <textarea id="editor" placeholder="El texto extraído aparecerá aquí. Puedes editarlo." disabled></textarea>
+      <div class="actions">
+        <span id="status" class="status"></span>
+        <button id="retryBtn" class="ghost" disabled>Reintentar</button>
+        <button id="copyBtn" class="ghost" disabled>Copiar</button>
+        <button id="saveBtn" class="primary" disabled>Guardar</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="fab-group">
+    <button id="cameraBtn" class="primary fab code">CÁMARA</button>
+    <button id="galleryBtn" class="ghost fab code">GALERÍA</button>
+  </div>
+  <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="galleryInput" type="file" accept="image/*" hidden>
+
+  <!-- Recorte -->
+  <dialog id="cropDlg">
+    <h2>Elige el área a leer</h2>
+    <p class="hint">Arrastra sobre la imagen. Sin selección se usa todo.</p>
+    <div class="crop-stage">
+      <div id="cropBox">
+        <img id="cropImg" alt="">
+        <div id="cropSel" hidden></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="cropCancel" class="ghost">Cancelar</button>
+      <button id="cropAll" class="ghost">Usar todo</button>
+      <button id="cropGo" class="primary">Leer</button>
+    </div>
+  </dialog>
+
+  <!-- Renombrar -->
+  <dialog id="renameDlg">
+    <h2>Renombrar trabajo</h2>
+    <input id="renameInput" type="text" maxlength="80">
+    <div class="actions">
+      <button id="renameCancel" class="ghost">Cancelar</button>
+      <button id="renameOk" class="primary">Guardar</button>
+    </div>
+  </dialog>
+
+  <!-- Eliminar -->
+  <dialog id="confirmDlg">
+    <h2 id="confirmText">¿Eliminar?</h2>
+    <div class="actions">
+      <button id="confirmNo" class="ghost">Cancelar</button>
+      <button id="confirmYes" class="primary">Eliminar</button>
+    </div>
+  </dialog>
+
+  <!-- Donar -->
+  <dialog id="donateDlg">
+    <h2>Apoyar ScreenOCR</h2>
+    <p class="hint">Es gratis y de código abierto. Si te sirve, puedes apoyar con una donación voluntaria.</p>
+    <div id="donateList"></div>
+    <div class="actions"><button id="donateClose" class="primary">Cerrar</button></div>
+  </dialog>
+
+  <!-- Configuración -->
+  <dialog id="settingsDlg">
+    <h2>Configuración</h2>
+    <label class="field">API key de OCR.space
+      <input id="apiKeyInput" type="password" placeholder="Clave gratuita de ocr.space/ocrapi/freekey">
+    </label>
+    <p class="hint" id="keyHint"></p>
+    <label class="field">Idioma
+      <select id="langInput">
+        <option value="auto">Automático (EN + ES)</option>
+        <option value="eng">Inglés</option>
+        <option value="spa">Español</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button id="settingsCancel" class="ghost">Cancelar</button>
+      <button id="settingsSave" class="primary">Guardar</button>
+    </div>
+  </dialog>
+
+  <div id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
