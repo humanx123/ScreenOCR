@@ -31,12 +31,16 @@ from PySide6.QtWidgets import (
 )
 
 from capture import SnipOverlay
-from ocr_client import OCRError, ocr_image
+from ocr_client import OCR_ENDPOINT, OCRError, ocr_image
 from ocr_windows import describe_installed, ocr_windows
 from storage import IMAGES_DIR, Store, load_config, save_config
 from styles import QSS
 
-ENGINES = [("OCR.space (nube, gratis)", "ocrspace"), ("Windows (local, sin internet)", "windows")]
+ENGINES = [
+    ("OCR.space (nube, clave gratuita)", "ocrspace"),
+    ("Windows (local, sin internet)", "windows"),
+    ("Endpoint propio (compatible OCR.space)", "custom"),
+]
 LANGUAGES = [("Automático (EN + ES)", "auto"), ("Inglés", "eng"), ("Español", "spa")]
 STATUS_TEXT = {"pending": "Procesando OCR…", "done": "Listo", "error": "Error"}
 
@@ -60,7 +64,8 @@ class OcrWorker(QThread):
             if self.cfg.get("engine") == "windows":
                 text = ocr_windows(self.image_path, self.cfg["language"])
             else:
-                text = ocr_image(self.image_path, self.cfg["api_key"], self.cfg["language"])
+                endpoint = self.cfg.get("endpoint") if self.cfg.get("engine") == "custom" else None
+                text = ocr_image(self.image_path, self.cfg["api_key"], self.cfg["language"], endpoint or OCR_ENDPOINT)
             self.done.emit(self.job_id, text, "")
         except (OCRError, OSError) as e:
             self.done.emit(self.job_id, "", str(e))
@@ -154,6 +159,8 @@ class SettingsDialog(QDialog):
         self.engine_info.setObjectName("status")
         self.engine_info.setWordWrap(True)
 
+        self.endpoint = QLineEdit(cfg.get("endpoint", ""))
+        self.endpoint.setPlaceholderText("https://tu-servidor/parse/image")
         self.api_key = QLineEdit(cfg["api_key"])
         self.api_key.setEchoMode(QLineEdit.Password)
         self.api_key.setPlaceholderText("Clave gratuita de ocr.space/ocrapi/freekey")
@@ -171,7 +178,8 @@ class SettingsDialog(QDialog):
 
         form.addRow("Motor OCR", self.engine)
         form.addRow("", self.engine_info)
-        form.addRow("API key OCR.space", self.api_key)
+        form.addRow("Endpoint propio", self.endpoint)
+        form.addRow("API key", self.api_key)
         form.addRow("Idioma", self.language)
         form.addRow("Atajo global", self.hotkey)
         form.addRow(buttons)
@@ -179,6 +187,7 @@ class SettingsDialog(QDialog):
     def values(self):
         return {
             "engine": self.engine.currentData(),
+            "endpoint": self.endpoint.text().strip() or "",
             "api_key": self.api_key.text().strip(),
             "language": self.language.currentData(),
             "hotkey": self.hotkey.text().strip() or "ctrl+shift+s",

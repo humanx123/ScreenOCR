@@ -94,7 +94,18 @@
   <!-- Configuración -->
   <dialog id="settingsDlg">
     <h2>Configuración</h2>
-    <label class="field">API key de OCR.space
+    <label class="field">Motor de OCR
+      <select id="engineInput">
+        <option value="ocrspace">OCR.space (nube, clave gratuita)</option>
+        <option value="tesseract">Tesseract.js (código abierto, en el dispositivo)</option>
+        <option value="custom">Endpoint propio (compatible OCR.space)</option>
+      </select>
+    </label>
+    <p class="hint" id="engineHint"></p>
+    <label class="field" id="endpointField" hidden>URL del endpoint
+      <input id="endpointInput" type="url" placeholder="https://tu-servidor/parse/image">
+    </label>
+    <label class="field" id="apiKeyField">API key
       <input id="apiKeyInput" type="password" placeholder="Clave gratuita de ocr.space/ocrapi/freekey">
     </label>
     <p class="hint" id="keyHint"></p>

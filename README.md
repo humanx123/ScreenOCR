@@ -34,4 +34,4 @@ ScreenOCR es gratis. Si te sirve, puedes ayudar de estas maneras:
 
 MIT. Consulta `LICENSE`.
 
-Hecho por **XHumanX & IA**.
+Hecho por **XHumanX & IA Claude**.

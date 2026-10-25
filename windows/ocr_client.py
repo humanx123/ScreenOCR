@@ -37,7 +37,8 @@ def _upload_payload(path):
     raise OCRError("La captura es demasiado grande para el plan gratuito (1 MB). Captura un área más pequeña.")
 
 
-def ocr_image(path, api_key, language="auto"):
+def ocr_image(path, api_key, language="auto", endpoint=OCR_ENDPOINT):
+    """Envía la imagen a OCR.space o a cualquier endpoint compatible con su protocolo."""
     data, filename, mime = _upload_payload(path)
     form = {
         "apikey": api_key or "helloworld",
@@ -49,7 +50,7 @@ def ocr_image(path, api_key, language="auto"):
     }
     try:
         resp = requests.post(
-            OCR_ENDPOINT,
+            endpoint or OCR_ENDPOINT,
             data=form,
             files={"file": (filename, data, mime)},
             timeout=60,

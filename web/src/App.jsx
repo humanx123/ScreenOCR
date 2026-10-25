@@ -160,7 +160,8 @@ export default function App() {
               </a>
             </div>
             <p className="fine">
-              La lectura usa OCR.space y necesita internet. Para tu propia clave, ábrela y entra en AJUSTES.
+              En AJUSTES puedes elegir el motor: OCR.space (clave gratuita), Tesseract.js (código abierto, en tu
+              dispositivo, sin límites) o un endpoint propio compatible con OCR.space.
             </p>
           </Reveal>
         </section>
@@ -229,7 +230,7 @@ export default function App() {
 
       <footer>
         <span>
-          © 2026 ScreenOCR · Código abierto · Hecho por <strong>XHumanX &amp; IA</strong>
+          © 2026 ScreenOCR · Código abierto · Hecho por <strong>XHumanX &amp; IA Claude</strong>
         </span>
         <span>
           <a href={REPO_URL}>GitHub</a> · <a href={RELEASE_URL}>Releases</a>
