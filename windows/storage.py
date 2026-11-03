@@ -11,8 +11,7 @@ DB_PATH = DATA_DIR / "jobs.db"
 CONFIG_PATH = DATA_DIR / "config.json"
 
 DEFAULT_CONFIG = {
-    "engine": "ocrspace",      # ocrspace (nube), windows (local) o custom (endpoint propio)
-    "endpoint": "",
+    "engine": "auto",          # motor unificado: el que mejor resultado dé (ver ocr_auto.py)
     "api_key": "helloworld",   # clave demo de OCR.space; pon la tuya en Configuración
     "language": "auto",        # auto (EN+ES), eng o spa
     "hotkey": "ctrl+shift+s",

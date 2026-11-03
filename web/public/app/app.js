@@ -24,20 +24,13 @@
     confirmDlg: $("confirmDlg"), confirmText: $("confirmText"), confirmNo: $("confirmNo"), confirmYes: $("confirmYes"),
     donateDlg: $("donateDlg"), donateList: $("donateList"), donateBtn: $("donateBtn"), donateClose: $("donateClose"),
     settingsDlg: $("settingsDlg"), settingsBtn: $("settingsBtn"), apiKey: $("apiKeyInput"), lang: $("langInput"),
-    engine: $("engineInput"), endpoint: $("endpointInput"), endpointField: $("endpointField"),
-    apiField: $("apiKeyField"), engineHint: $("engineHint"),
     keyHint: $("keyHint"), settingsCancel: $("settingsCancel"), settingsSave: $("settingsSave"), toast: $("toast"),
   };
 
   // ---------- Configuración (por dispositivo) ----------
   const OCR_SPACE_URL = OCR_URL;
   const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
-  const ENGINE_HINTS = {
-    ocrspace: "OCR.space: API en la nube con clave gratuita. Requiere internet.",
-    tesseract: "Tesseract.js: código abierto, corre en tu dispositivo, sin clave ni límites. Requiere internet solo la primera vez para cargar el motor y los idiomas.",
-    custom: "Endpoint propio compatible con OCR.space (por ejemplo, un servidor que tú administras).",
-  };
-  const DEFAULT_CFG = { engine: "ocrspace", apiKey: DEMO_KEY, endpoint: OCR_SPACE_URL, language: "auto" };
+  const DEFAULT_CFG = { apiKey: DEMO_KEY, language: "auto" };
   let cfg = { ...DEFAULT_CFG };
   try { cfg = { ...DEFAULT_CFG, ...JSON.parse(localStorage.getItem("screenocr.cfg") || "{}") }; } catch (_) {}
   function saveCfg() { try { localStorage.setItem("screenocr.cfg", JSON.stringify(cfg)); } catch (_) {} }
@@ -123,12 +116,27 @@
     throw new Error("La captura es demasiado grande para el plan gratuito (1 MB). Elige un área más pequeña.");
   }
 
-  // ---------- OCR (OCR.space) ----------
-  // Despacha al motor elegido en Configuración.
+  // ---------- OCR: un solo motor unificado ----------
+  // Ejecuta Tesseract.js y OCR.space en paralelo y devuelve el resultado con mejor puntuación.
+  const WORD_RE = /[A-Za-zÀ-ÿ]{2,}/g;
+  const ALLOWED_PUNCT = new Set(".,;:!?¿¡()'\"-/%$@#&+_*");
+  function scoreText(t) {
+    if (!t || !t.trim()) return 0;
+    const letters = (t.match(WORD_RE) || []).reduce((n, w) => n + w.length, 0);
+    let weird = 0;
+    for (const c of t) {
+      if (!(/[\p{L}\p{N}]/u.test(c) || /\s/.test(c) || ALLOWED_PUNCT.has(c))) weird++;
+    }
+    return letters * Math.max(0, 1 - (weird / t.length) * 3);
+  }
   async function runOcr(blob) {
-    if (cfg.engine === "tesseract") return runTesseract(blob);
-    if (cfg.engine === "custom") return runOcrSpace(blob, cfg.endpoint || OCR_SPACE_URL);
-    return runOcrSpace(blob, OCR_SPACE_URL);
+    const settled = await Promise.allSettled([runTesseract(blob), runOcrSpace(blob, OCR_SPACE_URL)]);
+    const ok = settled.filter((s) => s.status === "fulfilled").map((s) => s.value);
+    if (!ok.length) {
+      const reasons = settled.map((s) => s.reason && s.reason.message).filter(Boolean);
+      throw new Error(reasons.join(" · ") || "Ningún motor OCR respondió.");
+    }
+    return ok.reduce((best, t) => (scoreText(t) > scoreText(best) ? t : best));
   }
 
   // Tesseract.js: se carga bajo demanda desde jsDelivr (código abierto, Apache-2.0).
@@ -482,34 +490,15 @@
   els.donateClose.onclick = () => els.donateDlg.close();
 
   // Configuración
-  function refreshEngineFields() {
-    const engine = els.engine.value;
-    els.apiField.hidden = engine !== "ocrspace" && engine !== "custom";
-    els.endpointField.hidden = engine !== "custom";
-    els.engineHint.textContent = ENGINE_HINTS[engine];
-    if (engine === "ocrspace") {
-      els.keyHint.textContent = "Sin clave propia se usa la demo pública de OCR.space, con cuota compartida y limitada.";
-    } else if (engine === "custom") {
-      els.keyHint.textContent = "Si tu endpoint pide clave, escríbela aquí.";
-    } else {
-      els.keyHint.textContent = "";
-    }
-  }
-  els.engine.onchange = refreshEngineFields;
-
   els.settingsBtn.onclick = () => {
-    els.engine.value = cfg.engine;
     els.apiKey.value = cfg.apiKey === DEMO_KEY ? "" : cfg.apiKey;
-    els.endpoint.value = cfg.endpoint || OCR_SPACE_URL;
     els.lang.value = cfg.language;
-    refreshEngineFields();
+    els.keyHint.textContent = "Sin clave propia se usa la demo pública de OCR.space, con cuota compartida y limitada.";
     els.settingsDlg.showModal();
   };
   els.settingsCancel.onclick = () => els.settingsDlg.close();
   els.settingsSave.onclick = () => {
-    cfg.engine = els.engine.value;
     cfg.apiKey = els.apiKey.value.trim() || DEMO_KEY;
-    cfg.endpoint = els.endpoint.value.trim() || OCR_SPACE_URL;
     cfg.language = els.lang.value;
     saveCfg();
     els.settingsDlg.close();

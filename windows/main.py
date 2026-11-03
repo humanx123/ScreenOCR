@@ -31,16 +31,11 @@ from PySide6.QtWidgets import (
 )
 
 from capture import SnipOverlay
-from ocr_client import OCR_ENDPOINT, OCRError, ocr_image
-from ocr_windows import describe_installed, ocr_windows
+from ocr_auto import ocr_auto
+from ocr_client import OCRError
 from storage import IMAGES_DIR, Store, load_config, save_config
 from styles import QSS
 
-ENGINES = [
-    ("OCR.space (nube, clave gratuita)", "ocrspace"),
-    ("Windows (local, sin internet)", "windows"),
-    ("Endpoint propio (compatible OCR.space)", "custom"),
-]
 LANGUAGES = [("Automático (EN + ES)", "auto"), ("Inglés", "eng"), ("Español", "spa")]
 STATUS_TEXT = {"pending": "Procesando OCR…", "done": "Listo", "error": "Error"}
 
@@ -61,11 +56,8 @@ class OcrWorker(QThread):
 
     def run(self):
         try:
-            if self.cfg.get("engine") == "windows":
-                text = ocr_windows(self.image_path, self.cfg["language"])
-            else:
-                endpoint = self.cfg.get("endpoint") if self.cfg.get("engine") == "custom" else None
-                text = ocr_image(self.image_path, self.cfg["api_key"], self.cfg["language"], endpoint or OCR_ENDPOINT)
+            # Un solo motor: el que mejor resultado dé en este momento (ver ocr_auto.py).
+            text = ocr_auto(self.image_path, self.cfg["language"], self.cfg["api_key"])
             self.done.emit(self.job_id, text, "")
         except (OCRError, OSError) as e:
             self.done.emit(self.job_id, "", str(e))
@@ -150,20 +142,9 @@ class SettingsDialog(QDialog):
         form.setSpacing(14)
         form.setContentsMargins(20, 20, 20, 20)
 
-        self.engine = QComboBox()
-        for label, code in ENGINES:
-            self.engine.addItem(label, code)
-        self.engine.setCurrentIndex(max(0, self.engine.findData(cfg["engine"])))
-
-        self.engine_info = QLabel(describe_installed())
-        self.engine_info.setObjectName("status")
-        self.engine_info.setWordWrap(True)
-
-        self.endpoint = QLineEdit(cfg.get("endpoint", ""))
-        self.endpoint.setPlaceholderText("https://tu-servidor/parse/image")
         self.api_key = QLineEdit(cfg["api_key"])
         self.api_key.setEchoMode(QLineEdit.Password)
-        self.api_key.setPlaceholderText("Clave gratuita de ocr.space/ocrapi/freekey")
+        self.api_key.setPlaceholderText("Clave gratuita de ocr.space/ocrapi/freekey (opcional)")
 
         self.language = QComboBox()
         for label, code in LANGUAGES:
@@ -176,19 +157,15 @@ class SettingsDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
 
-        form.addRow("Motor OCR", self.engine)
-        form.addRow("", self.engine_info)
-        form.addRow("Endpoint propio", self.endpoint)
-        form.addRow("API key", self.api_key)
+        form.addRow("API key OCR.space", self.api_key)
         form.addRow("Idioma", self.language)
         form.addRow("Atajo global", self.hotkey)
         form.addRow(buttons)
 
     def values(self):
         return {
-            "engine": self.engine.currentData(),
-            "endpoint": self.endpoint.text().strip() or "",
-            "api_key": self.api_key.text().strip(),
+            "engine": "auto",
+            "api_key": self.api_key.text().strip() or "helloworld",
             "language": self.language.currentData(),
             "hotkey": self.hotkey.text().strip() or "ctrl+shift+s",
         }
@@ -249,6 +226,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("ScreenOCR")
         self.resize(1240, 780)
+        self.setMinimumWidth(980)  # la barra superior needs room for title + 3 buttons
 
         self.store = Store()
         self.cfg = load_config()
@@ -278,24 +256,31 @@ class MainWindow(QMainWindow):
         top.setFixedHeight(64)
         tl = QHBoxLayout(top)
         tl.setContentsMargins(24, 0, 24, 0)
+        tl.setSpacing(8)
+
         title = QLabel("SCREEN OCR")
         title.setObjectName("appTitle")
-        tl.addWidget(title)
-        tl.addStretch()
+        title.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        title.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        tl.addWidget(title)  # title takes natural width
+        tl.addStretch()  # pushes buttons to the right
 
         btn_donate = QPushButton("Donar")
         btn_donate.setToolTip("Apoyar el proyecto (BTC, XMR, USDC)")
         btn_donate.clicked.connect(lambda: DonateDialog(self).exec())
         btn_settings = QPushButton("Configuración")
         btn_settings.clicked.connect(self.open_settings)
-        tl.addWidget(btn_donate)
-        tl.addSpacing(8)
+        btn_paste = QPushButton("Pegar imagen   CTRL+SHIFT+V")
+        btn_paste.setToolTip("Usar la imagen que tengas copiada en el portapapeles")
+        btn_paste.clicked.connect(self.paste_image)
         btn_capture = QPushButton(f"Nueva captura   {self.cfg['hotkey'].upper()}")
         btn_capture.setObjectName("primary")
         btn_capture.clicked.connect(self.start_capture)
-        tl.addWidget(btn_settings)
+        for b in (btn_donate, btn_settings, btn_paste):
+            tl.addWidget(b)
         tl.addSpacing(8)
         tl.addWidget(btn_capture)
+        QShortcut(QKeySequence("Ctrl+Shift+V"), self, activated=self.paste_image)
         outer.addWidget(top)
 
         body = QHBoxLayout()
@@ -475,11 +460,19 @@ class MainWindow(QMainWindow):
             self._hotkey_handle = None
             QMessageBox.warning(self, "Atajo", f"No se pudo registrar el atajo «{self.cfg['hotkey']}»:\n{e}")
 
+    def paste_image(self):
+        """Usa la imagen copiada en el portapapeles (por ejemplo, con Win+Shift+S o al copiar una imagen)."""
+        img = QApplication.clipboard().image()
+        if img.isNull():
+            QMessageBox.information(self, "Pegar imagen", "No hay una imagen en el portapapeles.")
+            return
+        self.on_captured(QPixmap.fromImage(img))
+
     def start_capture(self):
         if self._overlay is not None:
             return
-        self.hide()
-        QTimer.singleShot(250, self._open_overlay)  # deja que la ventana desaparezca
+        self.showMinimized()  # minimiza la app para dejar libre la pantalla
+        QTimer.singleShot(400, self._open_overlay)  # espera a que termine de minimizarse
 
     def _open_overlay(self):
         self._overlay = SnipOverlay()
@@ -491,9 +484,19 @@ class MainWindow(QMainWindow):
 
     def _restore(self):
         self._overlay = None
-        self.show()
+        self.showNormal()  # sale de minimizada
         self.raise_()
         self.activateWindow()
+        QTimer.singleShot(150, self._bring_to_front)  # Windows a veces bloquea el foco; se fuerza
+
+    def _bring_to_front(self):
+        """Windows solo permite traer al frente una ventana con llamadas nativas (SW_RESTORE + foreground)."""
+        if sys.platform != "win32":
+            return
+        import ctypes
+        hwnd = int(self.winId())
+        ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        ctypes.windll.user32.SetForegroundWindow(hwnd)
 
     def on_captured(self, pix):
         self._overlay = None
@@ -550,7 +553,7 @@ def main():
     if len(sys.argv) == 3 and sys.argv[1] == "--selftest-ocr":
         # Diagnóstico: ScreenOCR.exe --selftest-ocr imagen.png  (imprime el texto y sale)
         try:
-            print(ocr_windows(sys.argv[2], "auto"))
+            print(ocr_auto(sys.argv[2], "auto", "helloworld"))
             sys.exit(0)
         except OCRError as e:
             print(f"ERROR: {e}")
